@@ -2,8 +2,13 @@ import { AsyncLocalStorage } from 'async_hooks';
 
 import { Injectable } from '@nestjs/common';
 
-interface RequestInfo {
+interface UserInfo {
   userId: number;
+  organizationId: number;
+  role: string;
+}
+interface RequestInfo {
+  user: UserInfo;
   correlationId: string;
   path: string;
 }
@@ -33,9 +38,23 @@ export class AsyncLocalStorageService {
   getRequestInfo(): RequestInfo {
     const store = this.asyncLocalStorage.getStore();
     return {
-      userId: store?.get('userId'),
+      user: this.getUserInfo(),
       correlationId: store?.get('correlationId'),
       path: store?.get('path'),
+    };
+  }
+
+  setUserInfo(userId: number, organizationId: number, role: string) {
+    this.set('userId', userId);
+    this.set('organizationId', organizationId);
+    this.set('role', role);
+  }
+
+  getUserInfo(): UserInfo {
+    return {
+      userId: this.get('userId'),
+      organizationId: this.get('organizationId'),
+      role: this.get('role'),
     };
   }
 }

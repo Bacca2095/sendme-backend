@@ -7,7 +7,9 @@ import { AsyncLocalStorageService } from '@/shared/providers/async-local-storage
 
 interface JwtPayload {
   email: string;
-  sub: string;
+  sub: number;
+  organizationId: number;
+  role: string;
 }
 
 @Injectable()
@@ -21,9 +23,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    const { sub: id, email } = payload;
+    const { sub: id, email, role, organizationId } = payload;
 
-    this.als.set('userId', id);
-    return { id, email };
+    this.als.setUserInfo(id, organizationId, role);
+
+    return { id, email, organizationId, role };
   }
 }

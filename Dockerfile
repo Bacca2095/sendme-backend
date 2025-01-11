@@ -32,6 +32,7 @@ COPY --chown=node:node --from=build /app/prisma ./prisma
 COPY --chown=node:node --from=build /app/node_modules ./node_modules
 COPY --chown=node:node --from=build /app/package.json ./package.json
 COPY --chown=node:node --from=build /app/yarn.lock ./yarn.lock
+
 RUN yarn prisma:generate
 RUN rm -rf /root/.cache /tmp/*
 

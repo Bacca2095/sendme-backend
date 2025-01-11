@@ -1,6 +1,5 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["omitApi"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -8,77 +7,364 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id           Int           @id @default(autoincrement())
-  email        String        @unique
-  name         String?
-  password     String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  deletedAt    DateTime?
-  transactions Transaction[]
-  auditLogs    AuditLog[]
+enum ConditionType {
+  is_empty
+  not_empty
+  equals
+  not_equals
+  greater_than
+  less_than
+  between
+  contains
+  starts_with
+  ends_with
 }
 
-model Transaction {
-  id          Int             @id @default(autoincrement())
-  date        DateTime
-  amount      Float
-  description String?
-  type        TransactionType
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  deletedAt   DateTime?
-  userId      Int?
-  categoryId  Int?
-
-  category Category? @relation(fields: [categoryId], references: [id])
-  user     User?     @relation(fields: [userId], references: [id])
-
-  @@index([date, type])
-  @@index([userId, date])
+enum DataType {
+  string
+  number
+  boolean
+  date
 }
 
-model Category {
+enum ElementType {
+  input
+  textarea
+  select
+  checkbox
+  radio
+}
+
+enum ContactStatus {
+  active
+  inactive
+  blocked
+}
+
+enum CampaignStatus {
+  active
+  inactive
+  paused
+  finished
+}
+
+enum MessageChannel {
+  SMS
+  EMAIL
+  WHATSAPP
+  PUSH_NOTIFICATION
+  OTHER
+}
+
+enum MessageStatus {
+  pending
+  queued
+  processing
+  sent
+  failed
+  expired
+}
+
+enum DeliveryStatus {
+  pending
+  delivered
+  undelivered
+}
+
+enum ContentType {
+  plain_text
+  html
+}
+
+model Organization {
   id        Int       @id @default(autoincrement())
   name      String    @unique
+  domain    String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  transactions Transaction[]
+  users         User[]
+  contacts      Contact[]
+  campaigns     Campaign[]
+  customFields  CustomField[]
+  subscriptions Subscription[]
+  auditLog      AuditLog[]
+  sentMessages  SentMessage[]
+
+  @@index([name])
+}
+
+model User {
+  id             Int          @id @default(autoincrement())
+  name           String
+  email          String       @unique
+  password       String
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  userRoles UserRole[]
+  auditLog  AuditLog[]
+
+  @@index([email])
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+}
+
+model Permission {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+}
+
+model UserRole {
+  id     Int @id @default(autoincrement())
+  userId Int
+  roleId Int
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, roleId])
+}
+
+model RolePermission {
+  id           Int @id @default(autoincrement())
+  roleId       Int
+  permissionId Int
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roleId, permissionId])
 }
 
 model AuditLog {
   id            Int      @id @default(autoincrement())
-  userId        Int
-  user          User     @relation(fields: [userId], references: [id])
   action        String
-  table         String
-  recordId      Int?
   changes       Json?
   correlationId String?
   path          String?
+  recordId      Int?
+  table         String
   timestamp     DateTime @default(now())
+
+  userId         Int
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
 
   @@index([userId, recordId, table, timestamp])
 }
 
-model ServerCredential {
-  id        Int       @id @default(autoincrement())
-  name      String
-  password  String
-  host      String
-  serverId  Int       @unique
-  secretId  Int
+model Contact {
+  id          Int           @id @default(autoincrement())
+  name        String
+  lastName    String?
+  birthDate   DateTime?
+  email       String?
+  phone       String?
+  countryCode String?
+  status      ContactStatus @default(active)
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  @@index([serverId, secretId, name])
+  customValue  CustomValue[]
+  sentMessages SentMessage[]
+
+  @@index([email, phone])
 }
 
-enum TransactionType {
-  income
-  expense
+model CustomField {
+  id          Int         @id @default(autoincrement())
+  fieldName   String
+  elementType ElementType
+  dataType    DataType
+  options     Json?
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  customValue   CustomValue[]
+  campaignRules CampaignRule[]
+}
+
+model CustomValue {
+  id    Int  @id @default(autoincrement())
+  value Json
+
+  contactId     Int
+  contact       Contact     @relation(fields: [contactId], references: [id])
+  customFieldId Int
+  customField   CustomField @relation(fields: [customFieldId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model Campaign {
+  id          Int            @id @default(autoincrement())
+  name        String
+  description String
+  content     String
+  contentType ContentType
+  channel     MessageChannel
+  status      CampaignStatus @default(active)
+
+  startDate DateTime
+  endDate   DateTime?
+  time      String
+  rrule     String?
+
+  providerId     Int
+  provider       Provider     @relation(fields: [providerId], references: [id])
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  campaignRules CampaignRule[]
+  sentMessage   SentMessage[]
+}
+
+model CampaignRule {
+  id            Int           @id @default(autoincrement())
+  conditionType ConditionType
+  value         Json
+
+  campaignId    Int
+  campaign      Campaign    @relation(fields: [campaignId], references: [id])
+  customFieldId Int
+  customField   CustomField @relation(fields: [customFieldId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model Provider {
+  id          Int    @id @default(autoincrement())
+  name        String @unique
+  authMethod  String
+  config      Json
+  dataMapping Json
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  campaigns    Campaign[]
+  sentMessages SentMessage[]
+}
+
+model Plan {
+  id           Int     @id @default(autoincrement())
+  name         String
+  description  String?
+  messageLimit Int
+  cost         Float
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id            Int      @id @default(autoincrement())
+  status        String   @default("active")
+  startDate     DateTime
+  endDate       DateTime
+  nextResetDate DateTime
+  messageUsage  Int      @default(0)
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  planId         Int
+  plan           Plan         @relation(fields: [planId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  payments Payment[]
+}
+
+model Payment {
+  id          Int      @id @default(autoincrement())
+  amount      Float
+  method      String
+  paymentDate DateTime
+  status      String   @default("completed")
+
+  subscriptionId Int
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model SentMessage {
+  id               Int            @id @default(autoincrement())
+  content          String
+  contentType      ContentType
+  channel          MessageChannel
+  status           MessageStatus  @default(pending)
+  sentAt           DateTime?
+  deliveryStatus   DeliveryStatus @default(pending)
+  deliveryInfo     Json?
+  providerResponse Json?
+  messageId        String?
+
+  providerId Int
+  provider   Provider @relation(fields: [providerId], references: [id])
+
+  campaignId Int?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+
+  contactId Int?
+  contact   Contact? @relation(fields: [contactId], references: [id])
+
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }

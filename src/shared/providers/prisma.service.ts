@@ -29,9 +29,13 @@ export class PrismaService
   ) {
     const result = await next(params);
 
-    const { userId, path, correlationId } = this.als.getRequestInfo();
+    const {
+      user: { userId, organizationId },
+      path,
+      correlationId,
+    } = this.als.getRequestInfo();
 
-    if (!userId) {
+    if (!userId || !organizationId) {
       return result;
     }
 
@@ -51,6 +55,7 @@ export class PrismaService
 
       await this.auditLog.create({
         data: {
+          organizationId,
           userId,
           action: params.action,
           table: params.model || 'unknown',

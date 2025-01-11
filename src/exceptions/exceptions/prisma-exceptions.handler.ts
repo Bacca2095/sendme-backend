@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -39,7 +40,7 @@ export class PrismaExceptionsHandler extends ExceptionHandler {
       case 'P2025':
         throw new NotFoundException(`${error.meta['modelName']} not found`);
       default:
-        throw new Error('Unexpected Prisma error');
+        throw new InternalServerErrorException('Unexpected Prisma error');
     }
   }
 }

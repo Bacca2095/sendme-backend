@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
+import { OrganizationService } from '@/organizations/providers/organization.service';
 import { environment } from '@/shared/env/environment';
 import { UserService } from '@/users/providers/user.service';
 
@@ -22,7 +23,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       }),
     }),
   ],
-  providers: [AuthService, UserService, JwtStrategy],
+  providers: [AuthService, UserService, OrganizationService, JwtStrategy],
   exports: [AuthService, JwtStrategy],
   controllers: [AuthController],
 })
