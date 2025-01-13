@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Campaign } from '@prisma/client';
+import { $Enums, Campaign } from '@prisma/client';
 import { IsDateString, IsNumber, IsString } from 'class-validator';
 
 export class CampaignDto implements Campaign {
@@ -23,9 +23,21 @@ export class CampaignDto implements Campaign {
   @IsNumber()
   organizationId: number;
 
-  @ApiProperty()
-  @IsDateString()
-  scheduledAt: Date;
+  status: $Enums.CampaignStatus;
+
+  description: string;
+
+  contentType: $Enums.ContentType;
+
+  channel: $Enums.MessageChannel;
+
+  startDate: Date;
+
+  endDate: Date;
+
+  time: string;
+
+  rrule: string;
 
   @ApiProperty()
   @IsDateString()

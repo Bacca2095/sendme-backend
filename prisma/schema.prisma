@@ -142,7 +142,7 @@ model UserRole {
   role Role @relation(fields: [roleId], references: [id])
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([userId, roleId])
 }
@@ -156,7 +156,7 @@ model RolePermission {
   permission Permission @relation(fields: [permissionId], references: [id])
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([roleId, permissionId])
 }
@@ -240,7 +240,6 @@ model Campaign {
   description String
   content     String
   contentType ContentType
-  channel     MessageChannel
   status      CampaignStatus @default(active)
 
   startDate DateTime
@@ -257,8 +256,9 @@ model Campaign {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  campaignRules CampaignRule[]
-  sentMessage   SentMessage[]
+  campaignRules    CampaignRule[]
+  sentMessage      SentMessage[]
+  campaignDispatch CampaignDispatch[]
 }
 
 model CampaignRule {
@@ -276,6 +276,33 @@ model CampaignRule {
   deletedAt DateTime?
 }
 
+model CampaignDispatch {
+  id             Int      @id @default(autoincrement())
+  campaignId     Int
+  sentAt         DateTime
+  totalSent      Int      @default(0)
+  totalDelivered Int      @default(0)
+  totalFailed    Int      @default(0)
+  notes          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaign     Campaign      @relation(fields: [campaignId], references: [id])
+  sentMessages SentMessage[]
+
+  @@index([campaignId, sentAt])
+}
+
+model Channel {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  providers ChannelProvider[]
+}
+
 model Provider {
   id          Int    @id @default(autoincrement())
   name        String @unique
@@ -283,12 +310,25 @@ model Provider {
   config      Json
   dataMapping Json
 
+  channelProviders ChannelProvider[]
+  campaigns        Campaign[]
+  sentMessages     SentMessage[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+}
 
-  campaigns    Campaign[]
-  sentMessages SentMessage[]
+model ChannelProvider {
+  id         Int @id @default(autoincrement())
+  channelId  Int
+  providerId Int
+  priority   Int @default(1)
+
+  channel  Channel  @relation(fields: [channelId], references: [id])
+  provider Provider @relation(fields: [providerId], references: [id])
+
+  @@unique([channelId, providerId])
 }
 
 model Plan {
@@ -357,6 +397,9 @@ model SentMessage {
 
   campaignId Int?
   campaign   Campaign? @relation(fields: [campaignId], references: [id])
+
+  campaignDispatchId Int?
+  campaignDispatch   CampaignDispatch? @relation(fields: [campaignDispatchId], references: [id])
 
   contactId Int?
   contact   Contact? @relation(fields: [contactId], references: [id])
