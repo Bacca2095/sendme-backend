@@ -1,8 +1,31 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { $Enums, Campaign } from '@prisma/client';
-import { IsDateString, IsNumber, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsDateString,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+
+import { CampaignRuleDto } from './campaign-rule.dto';
 
 export class CampaignDto implements Campaign {
+  @ApiProperty({ enum: $Enums.Frequency })
+  @IsEnum($Enums.Frequency)
+  frequency: $Enums.Frequency;
+
+  @ApiPropertyOptional({
+    enum: $Enums.Weekday,
+    description: 'Days of the week when the campaign will be executed',
+    example: ['MO', 'TU', 'WE'],
+  })
+  @IsEnum($Enums.Weekday, { each: true })
+  @IsArray()
+  days: $Enums.Weekday[];
   @ApiProperty()
   @IsNumber()
   id: number;
@@ -13,7 +36,38 @@ export class CampaignDto implements Campaign {
 
   @ApiProperty()
   @IsString()
+  description: string;
+
+  @ApiProperty()
+  @IsString()
   content: string;
+
+  @ApiProperty({ enum: $Enums.ContentType })
+  @IsEnum($Enums.ContentType)
+  contentType: $Enums.ContentType;
+
+  @ApiProperty({ enum: $Enums.CampaignStatus })
+  @IsEnum($Enums.CampaignStatus)
+  status: $Enums.CampaignStatus;
+
+  @ApiPropertyOptional()
+  @IsDateString()
+  @IsOptional()
+  startDate: Date;
+
+  @ApiPropertyOptional()
+  @IsDateString()
+  @IsOptional()
+  endDate: Date;
+
+  @ApiProperty()
+  @IsString()
+  time: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  rrule: string;
 
   @ApiProperty()
   @IsNumber()
@@ -23,22 +77,6 @@ export class CampaignDto implements Campaign {
   @IsNumber()
   organizationId: number;
 
-  status: $Enums.CampaignStatus;
-
-  description: string;
-
-  contentType: $Enums.ContentType;
-
-  channel: $Enums.MessageChannel;
-
-  startDate: Date;
-
-  endDate: Date;
-
-  time: string;
-
-  rrule: string;
-
   @ApiProperty()
   @IsDateString()
   createdAt: Date;
@@ -47,7 +85,15 @@ export class CampaignDto implements Campaign {
   @IsDateString()
   updatedAt: Date;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsDateString()
+  @IsOptional()
   deletedAt: Date;
+
+  @ApiPropertyOptional({ type: [CampaignRuleDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CampaignRuleDto)
+  @IsOptional()
+  campaignRules?: CampaignRuleDto[];
 }

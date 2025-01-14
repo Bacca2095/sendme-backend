@@ -16,20 +16,40 @@ export class UserService {
   ) {}
 
   async get(): Promise<UserDto[]> {
-    return this.db.user.findMany({
+    const users = await this.db.user.findMany({
       omit: { password: true },
+      include: { userRoles: { include: { role: true } } },
     });
+
+    return users.map((user) => ({
+      ...user,
+      role: user.userRoles[0].role,
+    }));
   }
 
   async getById(id: number): Promise<UserDto> {
-    return this.db.user.findUniqueOrThrow({
+    const user = await this.db.user.findUniqueOrThrow({
       where: { id },
       omit: { password: true },
+      include: { userRoles: { include: { role: true } } },
     });
+
+    return {
+      ...user,
+      role: user.userRoles[0].role,
+    };
   }
 
   async getByEmail(email: string): Promise<UserWithPasswordDto> {
-    return this.db.user.findUniqueOrThrow({ where: { email } });
+    const user = await this.db.user.findUniqueOrThrow({
+      where: { email },
+      include: { userRoles: { include: { role: true } } },
+    });
+
+    return {
+      ...user,
+      role: user.userRoles[0].role,
+    };
   }
 
   async create(data: CreateUserDto): Promise<UserDto> {
@@ -37,23 +57,51 @@ export class UserService {
 
     const hashedPassword = await hash(password);
 
-    return this.db.user.create({
+    const user = await this.db.user.create({
       data: { ...data, password: hashedPassword },
-      omit: { password: true },
     });
+
+    const userWithRole = await this.db.user.findUniqueOrThrow({
+      where: { id: user.id },
+      omit: { password: true },
+      include: { userRoles: { include: { role: true } } },
+    });
+
+    return {
+      ...userWithRole,
+      role: userWithRole.userRoles[0].role,
+    };
   }
 
   async update(id: number, data: UpdateUserDto): Promise<UserDto> {
     const { password, ...rest } = data;
     const hashedPassword = password ? await hash(password) : undefined;
-    return this.db.user.update({
+    const updatedUser = await this.db.user.update({
       where: { id },
       data: { ...rest, password: hashedPassword },
-      omit: { password: true },
     });
+
+    const userWithRole = await this.db.user.findUniqueOrThrow({
+      where: { id: updatedUser.id },
+      omit: { password: true },
+      include: { userRoles: { include: { role: true } } },
+    });
+
+    return {
+      ...userWithRole,
+      role: userWithRole.userRoles[0].role,
+    };
   }
 
   async remove(id: number): Promise<UserDto> {
-    return this.db.user.delete({ where: { id }, omit: { password: true } });
+    const user = await this.db.user.delete({
+      where: { id },
+      include: { userRoles: { include: { role: true } } },
+    });
+
+    return {
+      ...user,
+      role: user.userRoles[0].role,
+    };
   }
 }

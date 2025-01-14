@@ -76,6 +76,28 @@ enum ContentType {
   html
 }
 
+enum Weekday {
+  MO
+  TU
+  WE
+  TH
+  FR
+  SA
+  SU
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum RechargeStatus {
+  pending
+  completed
+  failed
+}
+
 model Organization {
   id        Int       @id @default(autoincrement())
   name      String    @unique
@@ -91,6 +113,7 @@ model Organization {
   subscriptions Subscription[]
   auditLog      AuditLog[]
   sentMessages  SentMessage[]
+  recharges     Recharge[]
 
   @@index([name])
 }
@@ -128,7 +151,7 @@ model Permission {
   name        String   @unique
   description String?
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
 
   rolePermissions RolePermission[]
 }
@@ -213,7 +236,7 @@ model CustomField {
   organization   Organization @relation(fields: [organizationId], references: [id])
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  updatedAt DateTime  @default(now()) @updatedAt
   deletedAt DateTime?
 
   customValue   CustomValue[]
@@ -241,6 +264,8 @@ model Campaign {
   content     String
   contentType ContentType
   status      CampaignStatus @default(active)
+  days        Weekday[]
+  frequency   Frequency
 
   startDate DateTime
   endDate   DateTime?
@@ -315,7 +340,7 @@ model Provider {
   sentMessages     SentMessage[]
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  updatedAt DateTime  @default(now()) @updatedAt
   deletedAt DateTime?
 }
 
@@ -331,52 +356,95 @@ model ChannelProvider {
   @@unique([channelId, providerId])
 }
 
-model Plan {
-  id           Int     @id @default(autoincrement())
-  name         String
-  description  String?
-  messageLimit Int
-  cost         Float
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  subscriptions Subscription[]
-}
-
-model Subscription {
-  id            Int      @id @default(autoincrement())
-  status        String   @default("active")
-  startDate     DateTime
-  endDate       DateTime
-  nextResetDate DateTime
-  messageUsage  Int      @default(0)
-
-  organizationId Int
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  planId         Int
-  plan           Plan         @relation(fields: [planId], references: [id])
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+model PaymentProvider {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  config      Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
   payments Payment[]
 }
 
 model Payment {
-  id          Int      @id @default(autoincrement())
-  amount      Float
-  method      String
-  paymentDate DateTime
-  status      String   @default("completed")
+  id                Int             @id @default(autoincrement())
+  amount            Float
+  method            String
+  paymentProviderId Int
+  paymentProvider   PaymentProvider @relation(fields: [paymentProviderId], references: [id])
+  status            String          @default("pending")
+  transactionId     String
 
-  subscriptionId Int
-  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  notes String?
+
+  recharge Recharge?
+
+  subscriptionId Int?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now())
+  deletedAt DateTime?
+}
+
+model Subscription {
+  id             Int          @id @default(autoincrement())
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  planId Int
+  plan   Plan @relation(fields: [planId], references: [id])
+
+  startDate     DateTime
+  endDate       DateTime
+  nextResetDate DateTime
+  messageUsage  Int      @default(0)
+  campaignLimit Int      @default(0)
+  contactLimit  Int      @default(0)
+
+  payments Payment[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model Recharge {
+  id             Int          @id @default(autoincrement())
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  paymentId      Int?         @unique
+  payment        Payment?     @relation(fields: [paymentId], references: [id])
+
+  amount       Float
+  messageCount Int
+
+  remainingAmount   Float
+  remainingMessages Int
+
+  status      RechargeStatus @default(pending)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
+  SentMessage SentMessage[]
+}
+
+model Plan {
+  id              Int     @id @default(autoincrement())
+  name            String
+  description     String?
+  messageLimit    Int
+  contactLimit    Int     @default(0)
+  campaignLimit   Int     @default(0)
+  cost            Float
+  pricePerMessage Float
+
+  subscriptions Subscription[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
   deletedAt DateTime?
 }
 
@@ -404,10 +472,13 @@ model SentMessage {
   contactId Int?
   contact   Contact? @relation(fields: [contactId], references: [id])
 
+  rechargeId Int?
+  recharge   Recharge? @relation(fields: [rechargeId], references: [id])
+
   organizationId Int
   organization   Organization @relation(fields: [organizationId], references: [id])
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  updatedAt DateTime  @default(now())
   deletedAt DateTime?
 }

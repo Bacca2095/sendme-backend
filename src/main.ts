@@ -68,4 +68,7 @@ const bootstrap = async (): Promise<void> => {
   logger.log(`🚀 Application is running at: ${await app.getUrl()}/api`);
 };
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

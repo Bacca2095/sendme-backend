@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CampaignStatus, ContentType } from '@prisma/client';
+import { $Enums, CampaignStatus, ContentType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
@@ -57,14 +57,20 @@ export class CreateCampaignDto {
   time: string;
 
   @ApiProperty({
-    description: 'Days of the week when the campaign will be executed',
-    type: [String],
-    example: ['monday', 'wednesday', 'friday'],
+    enum: $Enums.Weekday,
   })
+  @IsEnum($Enums.Weekday, { each: true })
   @IsArray()
   @ArrayMinSize(1)
   @IsNotEmpty({ each: true })
-  days: string[];
+  days: $Enums.Weekday[];
+
+  @ApiProperty({
+    description: 'The frequency of the campaign',
+    enum: $Enums.Frequency,
+  })
+  @IsEnum($Enums.Frequency)
+  frequency: $Enums.Frequency;
 
   @ApiProperty()
   @IsInt()

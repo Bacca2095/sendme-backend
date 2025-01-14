@@ -9,6 +9,10 @@ import { CampaignModule } from './campaigns/campaign.module';
 import { ContactModule } from './contacts/contact.module';
 import { CustomFieldsModule } from './custom-fields/custom-fields.module';
 import { OrganizationModule } from './organizations/organization.module';
+import { PermissionModule } from './permissions/permission.module';
+import { PlanModule } from './plans/plan.module';
+import { RoleModule } from './roles/role.module';
+import { SubscriptionModule } from './subscriptions/subscription.module';
 import { UserModule } from './users/user.module';
 
 @Module({
@@ -20,6 +24,10 @@ import { UserModule } from './users/user.module';
     CustomFieldsModule,
     ContactModule,
     CampaignModule,
+    RoleModule,
+    PermissionModule,
+    SubscriptionModule,
+    PlanModule,
   ],
   controllers: [],
   providers: [],

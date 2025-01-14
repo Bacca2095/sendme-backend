@@ -1,11 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Contact, CustomValue } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { $Enums, Contact, CustomValue } from '@prisma/client';
 import { JsonValue } from '@prisma/client/runtime/library';
 import { Type } from 'class-transformer';
 import {
   IsArray,
   IsDateString,
+  IsEnum,
   IsNumber,
+  IsOptional,
   IsPhoneNumber,
   IsString,
   ValidateNested,
@@ -35,14 +37,15 @@ export class CustomValueDto implements CustomValue {
   @IsDateString()
   updatedAt: Date;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsDateString()
+  @IsOptional()
   deletedAt: Date;
 }
 
 export class ContactDto implements Contact {
   @ApiProperty()
-  @IsString()
+  @IsNumber()
   id: number;
 
   @ApiProperty()
@@ -61,10 +64,26 @@ export class ContactDto implements Contact {
   @IsString()
   countryCode: string;
 
-  @ApiProperty({ type: [CustomValueDto] })
+  @ApiProperty({
+    enum: $Enums.ContactStatus,
+  })
+  @IsEnum($Enums.ContactStatus)
+  status: $Enums.ContactStatus;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  lastName: string;
+
+  @ApiPropertyOptional()
+  @IsDateString()
+  @IsOptional()
+  birthDate: Date;
+
+  @ApiProperty({ type: () => [CustomValueDto] })
   @Type(() => CustomValueDto)
   @ValidateNested({ each: true })
-  @IsArray({ each: true })
+  @IsArray()
   customValue: CustomValueDto[];
 
   @ApiProperty()
@@ -79,7 +98,8 @@ export class ContactDto implements Contact {
   @IsDateString()
   updatedAt: Date;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsDateString()
+  @IsOptional()
   deletedAt: Date;
 }

@@ -1,6 +1,15 @@
-import { ApiProperty, OmitType } from '@nestjs/swagger';
-import { $Enums, User } from '@prisma/client';
-import { IsDate, IsEmail, IsEnum, IsNumber, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
+import { User } from '@prisma/client';
+import { Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsEmail,
+  IsNumber,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+
+import { RoleDto } from '@/roles/dto/role.dto';
 
 export class UserWithPasswordDto implements User {
   @ApiProperty()
@@ -19,24 +28,25 @@ export class UserWithPasswordDto implements User {
   @IsEmail()
   email: string;
 
+  @ApiProperty({ type: RoleDto })
+  @ValidateNested()
+  @Type(() => RoleDto)
+  role: RoleDto;
+
   @ApiProperty()
   @IsString()
   password: string;
 
-  @ApiProperty({ enum: $Enums.UserRole })
-  @IsEnum($Enums.UserRole)
-  role: $Enums.UserRole;
-
   @ApiProperty()
-  @IsDate()
+  @IsDateString()
   createdAt: Date;
 
   @ApiProperty()
-  @IsDate()
+  @IsDateString()
   updatedAt: Date;
 
-  @ApiProperty()
-  @IsDate()
+  @ApiPropertyOptional()
+  @IsDateString()
   deletedAt: Date;
 }
 

@@ -4,7 +4,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
 import { OrganizationService } from '@/organizations/providers/organization.service';
+import { PlanService } from '@/plans/providers/plan.service';
+import { RoleService } from '@/roles/providers/role.service';
 import { environment } from '@/shared/env/environment';
+import { SubscriptionService } from '@/subscriptions/providers/subscription.service';
 import { UserService } from '@/users/providers/user.service';
 
 import { AuthController } from './controllers/auth.controller';
@@ -23,7 +26,15 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       }),
     }),
   ],
-  providers: [AuthService, UserService, OrganizationService, JwtStrategy],
+  providers: [
+    AuthService,
+    UserService,
+    OrganizationService,
+    JwtStrategy,
+    RoleService,
+    SubscriptionService,
+    PlanService,
+  ],
   exports: [AuthService, JwtStrategy],
   controllers: [AuthController],
 })
