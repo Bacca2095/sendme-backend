@@ -10,12 +10,14 @@ import { OrganizationService } from '@/organizations/providers/organization.serv
 import { PlanService } from '@/plans/providers/plan.service';
 import { RoleService } from '@/roles/providers/role.service';
 import { environment } from '@/shared/env/environment';
+import { AsyncLocalStorageService } from '@/shared/providers/async-local-storage.service';
 import { SubscriptionService } from '@/subscriptions/providers/subscription.service';
-import { UserDto } from '@/users/dto/user.dto';
+import { UserWithPasswordDto } from '@/users/dto/user.dto';
 import { UserService } from '@/users/providers/user.service';
 
 import { SignUpDto } from '../dto/sign-up.dto';
-
+const DEFAULT_ROLE_NAME = 'manager';
+const DEFAULT_PLAN_NAME = 'trial';
 @Injectable()
 export class AuthService {
   constructor(
@@ -25,10 +27,12 @@ export class AuthService {
     private readonly roleService: RoleService,
     private readonly subscriptionService: SubscriptionService,
     private readonly planService: PlanService,
+    private readonly als: AsyncLocalStorageService,
   ) {}
 
   @HandleExceptions()
   async signIn(email: string, password: string): Promise<TokenResponseDto> {
+    this.als.disableOrganizationValidation();
     const user = await this.userService.getByEmail(email);
 
     const isPasswordValid = await verify(user.password, password);
@@ -42,25 +46,23 @@ export class AuthService {
 
   @HandleExceptions()
   async signUp(dto: SignUpDto): Promise<TokenResponseDto> {
-    const { name } = dto;
+    this.als.disableOrganizationValidation();
+    const { name, email } = dto;
 
-    // Crear organización
     const organization = await this.organizationService.create({ name });
 
-    // Obtener rol de 'manager'
-    const managerRole = await this.roleService.getByName('manager');
+    const managerRole = await this.roleService.getByName(DEFAULT_ROLE_NAME);
 
-    // Crear usuario asociado a la organización
-    const user = await this.userService.create({
+    await this.userService.create({
       ...dto,
       organizationId: organization.id,
       roleId: managerRole.id,
     });
 
-    // Obtener el plan de prueba ('trial')
-    const trialPlan = await this.planService.getByName('trial');
+    const user = await this.userService.getByEmail(email);
 
-    // Crear suscripción asociada a la organización
+    const trialPlan = await this.planService.getByName(DEFAULT_PLAN_NAME);
+
     const now = new Date();
     await this.subscriptionService.create({
       organizationId: organization.id,
@@ -77,9 +79,19 @@ export class AuthService {
     return this.generateToken(user);
   }
 
-  private generateToken(userDto: UserDto): TokenResponseDto {
-    const { id, email, organizationId, role } = userDto;
-    const payload = { sub: id, email, organizationId, role };
+  private generateToken(userDto: UserWithPasswordDto): TokenResponseDto {
+    const {
+      id,
+      email,
+      organizationId,
+      role: { name },
+    } = userDto;
+    const payload = {
+      sub: id,
+      email,
+      organizationId,
+      role: name,
+    };
     const accessToken = this.jwtService.sign(payload, {
       secret: environment.jwtSecret as string,
     });

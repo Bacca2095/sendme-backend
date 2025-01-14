@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { hash } from 'argon2';
 
+import { AppErrorCodesEnum } from '@/exceptions/enums/app-error-codes.enum';
+import { AppError } from '@/exceptions/errors/app.error';
 import { AsyncLocalStorageService } from '@/shared/providers/async-local-storage.service';
 import { PrismaService } from '@/shared/providers/prisma.service';
 
@@ -16,92 +18,119 @@ export class UserService {
   ) {}
 
   async get(): Promise<UserDto[]> {
+    const organizationId = this.als.getValidatedOrganizationId();
+    const whereClause = organizationId ? { organizationId } : {};
+
     const users = await this.db.user.findMany({
       omit: { password: true },
-      include: { userRoles: { include: { role: true } } },
+      include: { role: true },
+      where: whereClause,
     });
 
     return users.map((user) => ({
       ...user,
-      role: user.userRoles[0].role,
+      role: user.role,
     }));
   }
 
   async getById(id: number): Promise<UserDto> {
+    const organizationId = this.als.getValidatedOrganizationId();
+    const whereClause = organizationId ? { id, organizationId } : { id };
+
     const user = await this.db.user.findUniqueOrThrow({
-      where: { id },
+      where: whereClause,
       omit: { password: true },
-      include: { userRoles: { include: { role: true } } },
+      include: { role: true },
     });
 
-    return {
-      ...user,
-      role: user.userRoles[0].role,
-    };
+    return user;
   }
 
   async getByEmail(email: string): Promise<UserWithPasswordDto> {
     const user = await this.db.user.findUniqueOrThrow({
       where: { email },
-      include: { userRoles: { include: { role: true } } },
+      include: {
+        role: {
+          include: {
+            rolePermissions: { include: { permission: true } },
+          },
+        },
+      },
     });
 
     return {
       ...user,
-      role: user.userRoles[0].role,
+      permissions: user.role.rolePermissions.map(
+        (rolePermission) => rolePermission.permission.name,
+      ),
     };
   }
 
   async create(data: CreateUserDto): Promise<UserDto> {
-    const { password } = data;
+    const organizationId = this.als.getValidatedOrganizationId(
+      data.organizationId,
+    );
 
+    if (!organizationId) {
+      throw new AppError(AppErrorCodesEnum.ORGANIZATION_ID_NOT_FOUND);
+    }
+
+    const { password, roleId, ...rest } = data;
     const hashedPassword = await hash(password);
 
     const user = await this.db.user.create({
-      data: { ...data, password: hashedPassword },
+      data: {
+        ...rest,
+        organizationId,
+        password: hashedPassword,
+        roleId,
+      },
     });
 
     const userWithRole = await this.db.user.findUniqueOrThrow({
       where: { id: user.id },
       omit: { password: true },
-      include: { userRoles: { include: { role: true } } },
+      include: { role: true },
     });
 
-    return {
-      ...userWithRole,
-      role: userWithRole.userRoles[0].role,
-    };
+    return userWithRole;
   }
 
   async update(id: number, data: UpdateUserDto): Promise<UserDto> {
-    const { password, ...rest } = data;
+    const organizationId = this.als.getValidatedOrganizationId(
+      data.organizationId,
+    );
+
+    if (!organizationId) {
+      throw new AppError(AppErrorCodesEnum.ORGANIZATION_ID_NOT_FOUND);
+    }
+
+    const { password, roleId, ...rest } = data;
     const hashedPassword = password ? await hash(password) : undefined;
-    const updatedUser = await this.db.user.update({
-      where: { id },
-      data: { ...rest, password: hashedPassword },
+
+    await this.db.user.update({
+      where: { id, organizationId },
+      data: { ...rest, password: hashedPassword, roleId },
     });
 
     const userWithRole = await this.db.user.findUniqueOrThrow({
-      where: { id: updatedUser.id },
+      where: { id },
       omit: { password: true },
-      include: { userRoles: { include: { role: true } } },
+      include: { role: true },
     });
 
-    return {
-      ...userWithRole,
-      role: userWithRole.userRoles[0].role,
-    };
+    return userWithRole;
   }
 
   async remove(id: number): Promise<UserDto> {
+    const organizationId = this.als.getValidatedOrganizationId();
+    const whereClause = organizationId ? { id, organizationId } : { id };
+
     const user = await this.db.user.delete({
-      where: { id },
-      include: { userRoles: { include: { role: true } } },
+      where: whereClause,
+      include: { role: true },
     });
 
-    return {
-      ...user,
-      role: user.userRoles[0].role,
-    };
+    return user;
   }
 }

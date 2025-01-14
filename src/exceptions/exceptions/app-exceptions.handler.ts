@@ -32,6 +32,8 @@ export class AppExceptionsHandler extends ExceptionHandler {
         throw new ConflictException('User already in use');
       case AppErrorCodesEnum.INVALID_CREDENTIALS:
         throw new BadRequestException('Invalid credentials');
+      case AppErrorCodesEnum.ORGANIZATION_ID_NOT_FOUND:
+        throw new BadRequestException('Organization not found');
       default:
         throw new InternalServerErrorException(
           `An unexpected error occurred: ${error.code}`,

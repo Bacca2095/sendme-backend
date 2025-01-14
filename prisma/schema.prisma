@@ -125,12 +125,13 @@ model User {
   password       String
   organizationId Int
   organization   Organization @relation(fields: [organizationId], references: [id])
+  roleId         Int
+  role           Role         @relation(fields: [roleId], references: [id])
   createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  updatedAt      DateTime     @default(now()) @updatedAt
   deletedAt      DateTime?
 
-  userRoles UserRole[]
-  auditLog  AuditLog[]
+  auditLogs AuditLog[]
 
   @@index([email])
 }
@@ -140,10 +141,10 @@ model Role {
   name        String   @unique
   description String?
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
 
-  userRoles       UserRole[]
   rolePermissions RolePermission[]
+  users           User[]
 }
 
 model Permission {
@@ -154,20 +155,6 @@ model Permission {
   updatedAt   DateTime @default(now()) @updatedAt
 
   rolePermissions RolePermission[]
-}
-
-model UserRole {
-  id     Int @id @default(autoincrement())
-  userId Int
-  roleId Int
-
-  user User @relation(fields: [userId], references: [id])
-  role Role @relation(fields: [roleId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@unique([userId, roleId])
 }
 
 model RolePermission {

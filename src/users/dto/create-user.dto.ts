@@ -1,5 +1,4 @@
-import { ApiProperty, OmitType } from '@nestjs/swagger';
-import { IsNumber } from 'class-validator';
+import { OmitType } from '@nestjs/swagger';
 
 import { UserWithPasswordDto } from './user.dto';
 
@@ -9,8 +8,5 @@ export class CreateUserDto extends OmitType(UserWithPasswordDto, [
   'updatedAt',
   'id',
   'role',
-]) {
-  @ApiProperty()
-  @IsNumber()
-  roleId: number;
-}
+  'permissions',
+]) {}

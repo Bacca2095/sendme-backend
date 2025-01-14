@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsEmail,
   IsNumber,
+  IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
@@ -15,6 +16,10 @@ export class UserWithPasswordDto implements User {
   @ApiProperty()
   @IsNumber()
   id: number;
+
+  @ApiProperty()
+  @IsNumber()
+  roleId: number;
 
   @ApiProperty()
   @IsNumber()
@@ -33,6 +38,11 @@ export class UserWithPasswordDto implements User {
   @Type(() => RoleDto)
   role: RoleDto;
 
+  @ApiPropertyOptional()
+  @IsString({ each: true })
+  @IsOptional()
+  permissions?: string[];
+
   @ApiProperty()
   @IsString()
   password: string;
@@ -50,4 +60,7 @@ export class UserWithPasswordDto implements User {
   deletedAt: Date;
 }
 
-export class UserDto extends OmitType(UserWithPasswordDto, ['password']) {}
+export class UserDto extends OmitType(UserWithPasswordDto, [
+  'password',
+  'permissions',
+]) {}

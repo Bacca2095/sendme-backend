@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { environment } from '@/shared/env/environment';
 import { AsyncLocalStorageService } from '@/shared/providers/async-local-storage.service';
+import { PrismaService } from '@/shared/providers/prisma.service';
 
 interface JwtPayload {
   email: string;
@@ -14,7 +15,10 @@ interface JwtPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly als: AsyncLocalStorageService) {
+  constructor(
+    private readonly als: AsyncLocalStorageService,
+    private readonly db: PrismaService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -23,9 +27,36 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    const { sub: id, email, role, organizationId } = payload;
+    const { sub: id, email, organizationId } = payload;
 
-    this.als.setUserInfo(id, organizationId, role);
+    const role = await this.db.role.findFirst({
+      where: {
+        users: {
+          some: {
+            id,
+          },
+        },
+      },
+    });
+
+    const permissions = await this.db.permission.findMany({
+      where: {
+        rolePermissions: {
+          some: {
+            role: {
+              name: role.name,
+            },
+          },
+        },
+      },
+    });
+
+    this.als.setUserInfo(
+      id,
+      organizationId,
+      role.name,
+      permissions.map((p) => p.name),
+    );
 
     return { id, email, organizationId, role };
   }

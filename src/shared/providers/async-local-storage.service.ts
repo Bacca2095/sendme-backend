@@ -6,6 +6,7 @@ interface UserInfo {
   userId: number;
   organizationId: number;
   role: string;
+  permissions: string[];
 }
 interface RequestInfo {
   user: UserInfo;
@@ -44,10 +45,16 @@ export class AsyncLocalStorageService {
     };
   }
 
-  setUserInfo(userId: number, organizationId: number, role: string) {
+  setUserInfo(
+    userId: number,
+    organizationId: number,
+    role: string,
+    permissions: string[],
+  ) {
     this.set('userId', userId);
     this.set('organizationId', organizationId);
     this.set('role', role);
+    this.set('permissions', permissions);
   }
 
   getUserInfo(): UserInfo {
@@ -55,6 +62,40 @@ export class AsyncLocalStorageService {
       userId: this.get('userId'),
       organizationId: this.get('organizationId'),
       role: this.get('role'),
+      permissions: this.get('permissions'),
     };
+  }
+
+  enableOrganizationValidation() {
+    this.set('validateOrganization', true);
+  }
+
+  disableOrganizationValidation() {
+    this.set('validateOrganization', false);
+  }
+
+  shouldValidateOrganization(): boolean {
+    return this.get<boolean>('validateOrganization') ?? true;
+  }
+
+  isAdmin(): boolean {
+    const userInfo = this.getUserInfo();
+    return userInfo?.role === 'admin';
+  }
+
+  getValidatedOrganizationId(
+    providedOrganizationId?: number,
+  ): number | undefined {
+    const validateOrganization = this.shouldValidateOrganization();
+
+    if (!validateOrganization) {
+      return providedOrganizationId;
+    }
+
+    if (this.isAdmin()) {
+      return providedOrganizationId;
+    }
+
+    return this.getUserInfo().organizationId;
   }
 }

@@ -12,6 +12,9 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
+import { Permissions } from '@/permissions/decorators/permission.decorator';
+import { PermissionsGuard } from '@/permissions/guards/permission.guard';
+
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserDto } from '../dto/user.dto';
@@ -20,12 +23,13 @@ import { UserService } from '../providers/user.service';
 @ApiTags('Users')
 @Controller('users')
 @ApiBearerAuth('jwt')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), PermissionsGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
   @ApiOkResponse({ type: UserDto, isArray: true })
+  @Permissions('read_campaign')
   async get(): Promise<UserDto[]> {
     return this.userService.get();
   }

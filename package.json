@@ -21,8 +21,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:generate": "prisma generate",
-    "seed:dev": "npx ts-node -r tsconfig-paths/register src/shared/seeders/roles-permissions.seeder.ts",
-    "seed:prod": "NODE_ENV=production node dist/shared/seeders/roles-permissions.seeder.js"
+    "seed:dev": "npx ts-node -r tsconfig-paths/register src/shared/seeders/all.seeder.ts",
+    "seed:prod": "NODE_ENV=production node dist/shared/seeders/all.seeder.js"
   },
   "dependencies": {
     "@bull-board/api": "^6.5.4",
@@ -64,6 +64,9 @@
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",
+    "@suites/di.nestjs": "^3.0.1",
+    "@suites/doubles.jest": "^3.0.1",
+    "@suites/unit": "^3.0.1",
     "@swc/cli": "^0.5.2",
     "@swc/core": "^1.10.3",
     "@types/express": "^5.0.0",
@@ -106,11 +109,11 @@
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
     "roots": [
-      "<rootDir>/src/",
-      "<rootDir>/libs/"
+      "<rootDir>/src/"
     ],
     "moduleNameMapper": {
-      "^exceptions/exceptions(|/.*)$": "<rootDir>/libs/exceptions/src/$1"
+      "^exceptions/exceptions(|/.*)$": "<rootDir>/libs/exceptions/src/$1",
+      "@/(.*)": "<rootDir>/src/$1"
     }
   }
 }
