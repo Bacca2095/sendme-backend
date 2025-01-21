@@ -7,15 +7,22 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+
+import { PermissionsGuard } from '@/permissions/guards/permission.guard';
 
 import { CampaignDto } from '../dto/campaign.dto';
 import { CreateCampaignDto } from '../dto/create-campaign.dto';
+import { UpdateCampaignDto } from '../dto/update-campaign.dto';
 import { CampaignService } from '../providers/campaign.service';
 
 @ApiTags('Campaigns')
 @Controller('campaigns')
+@ApiBearerAuth('jwt')
+@UseGuards(AuthGuard('jwt'), PermissionsGuard)
 export class CampaignController {
   constructor(private readonly campaignService: CampaignService) {}
 
@@ -41,7 +48,7 @@ export class CampaignController {
   @ApiOkResponse({ type: CampaignDto })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CreateCampaignDto,
+    @Body() dto: UpdateCampaignDto,
   ) {
     return this.campaignService.update(id, dto);
   }

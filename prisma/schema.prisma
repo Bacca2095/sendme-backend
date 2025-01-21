@@ -48,29 +48,6 @@ enum CampaignStatus {
   finished
 }
 
-enum MessageChannel {
-  SMS
-  EMAIL
-  WHATSAPP
-  PUSH_NOTIFICATION
-  OTHER
-}
-
-enum MessageStatus {
-  pending
-  queued
-  processing
-  sent
-  failed
-  expired
-}
-
-enum DeliveryStatus {
-  pending
-  delivered
-  undelivered
-}
-
 enum ContentType {
   plain_text
   html
@@ -93,18 +70,52 @@ enum Frequency {
 }
 
 enum RechargeStatus {
+  accepted
+  rejected
   pending
-  completed
   failed
+  reversed
+  held
+  initiated
+  expired
+  abandoned
+  cancelled
+}
+
+enum SubscriptionStatus {
+  active
+  inactive
+  paused
+  cancelled
+}
+
+enum MessageStatus {
+  queued
+  sending
+  sent
+  delivered
+  undelivered
+  failed
+  received
+  scheduled
+  canceled
+  read
 }
 
 model Organization {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  domain    String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  id           Int       @id @default(autoincrement())
+  name         String    @unique
+  domain       String?
+  document     String?
+  documentType String?
+  country      String?
+  city         String?
+  address      String?
+  phone        String?
+  apiKey       String?   @default(cuid())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
 
   users         User[]
   contacts      Contact[]
@@ -114,6 +125,7 @@ model Organization {
   auditLog      AuditLog[]
   sentMessages  SentMessage[]
   recharges     Recharge[]
+  payments      Payment[]
 
   @@index([name])
 }
@@ -259,8 +271,8 @@ model Campaign {
   time      String
   rrule     String?
 
-  providerId     Int
-  provider       Provider     @relation(fields: [providerId], references: [id])
+  channelId      Int
+  channel        Channel      @relation(fields: [channelId], references: [id])
   organizationId Int
   organization   Organization @relation(fields: [organizationId], references: [id])
 
@@ -297,11 +309,14 @@ model CampaignDispatch {
   totalFailed    Int      @default(0)
   notes          String?
 
+  providerId Int
+  provider   Provider @relation(fields: [providerId], references: [id])
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+
+  sentMessages SentMessage[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  campaign     Campaign      @relation(fields: [campaignId], references: [id])
-  sentMessages SentMessage[]
 
   @@index([campaignId, sentAt])
 }
@@ -313,22 +328,21 @@ model Channel {
   updatedAt DateTime @updatedAt
 
   providers ChannelProvider[]
+  campaigns Campaign[]
 }
 
 model Provider {
-  id          Int    @id @default(autoincrement())
-  name        String @unique
-  authMethod  String
-  config      Json
-  dataMapping Json
+  id     Int    @id @default(autoincrement())
+  name   String @unique
+  config Json
 
   channelProviders ChannelProvider[]
-  campaigns        Campaign[]
   sentMessages     SentMessage[]
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now()) @updatedAt
-  deletedAt DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @default(now()) @updatedAt
+  deletedAt        DateTime?
+  campaignDispatch CampaignDispatch[]
 }
 
 model ChannelProvider {
@@ -361,11 +375,14 @@ model Payment {
   method            String
   paymentProviderId Int
   paymentProvider   PaymentProvider @relation(fields: [paymentProviderId], references: [id])
-  status            String          @default("pending")
+  status            RechargeStatus  @default(pending)
   transactionId     String
 
-  notes String?
+  organizationId Int?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  currencyCode   String        @default("USD")
 
+  notes    String?
   recharge Recharge?
 
   subscriptionId Int?
@@ -387,9 +404,10 @@ model Subscription {
   startDate     DateTime
   endDate       DateTime
   nextResetDate DateTime
-  messageUsage  Int      @default(0)
-  campaignLimit Int      @default(0)
-  contactLimit  Int      @default(0)
+  status        SubscriptionStatus @default(active)
+  messageUsage  Int                @default(0)
+  campaignLimit Int                @default(0)
+  contactLimit  Int                @default(0)
 
   payments Payment[]
 
@@ -399,11 +417,13 @@ model Subscription {
 }
 
 model Recharge {
-  id             Int          @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
+  paymentId Int     @unique
+  payment   Payment @relation(fields: [paymentId], references: [id])
+
   organizationId Int
   organization   Organization @relation(fields: [organizationId], references: [id])
-  paymentId      Int?         @unique
-  payment        Payment?     @relation(fields: [paymentId], references: [id])
+  currencyCode   String       @default("USD")
 
   amount       Float
   messageCount Int
@@ -411,11 +431,11 @@ model Recharge {
   remainingAmount   Float
   remainingMessages Int
 
-  status      RechargeStatus @default(pending)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  deletedAt   DateTime?
-  SentMessage SentMessage[]
+  status       RechargeStatus @default(pending)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  deletedAt    DateTime?
+  sentMessages SentMessage[]
 }
 
 model Plan {
@@ -436,19 +456,23 @@ model Plan {
 }
 
 model SentMessage {
-  id               Int            @id @default(autoincrement())
-  content          String
-  contentType      ContentType
-  channel          MessageChannel
-  status           MessageStatus  @default(pending)
-  sentAt           DateTime?
-  deliveryStatus   DeliveryStatus @default(pending)
-  deliveryInfo     Json?
-  providerResponse Json?
-  messageId        String?
+  id                  Int           @id @default(autoincrement())
+  content             String
+  contentType         ContentType
+  status              MessageStatus @default(queued)
+  sentAt              DateTime?
+  deliveryStatus      Json?
+  deliveryDetails     Json?
+  providerRawResponse Json?
+  errorMessage        String?
+  messageId           String?
+  recipientDetails    String
+  countryCode         String?
+  priority            Int?
+  messageType         String?
 
-  providerId Int
-  provider   Provider @relation(fields: [providerId], references: [id])
+  providerId Int?
+  provider   Provider? @relation(fields: [providerId], references: [id])
 
   campaignId Int?
   campaign   Campaign? @relation(fields: [campaignId], references: [id])

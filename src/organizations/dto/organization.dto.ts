@@ -16,6 +16,34 @@ export class OrganizationDto implements Organization {
   domain: string;
 
   @ApiProperty()
+  @IsString()
+  document: string;
+
+  @ApiProperty()
+  @IsString()
+  documentType: string;
+
+  @ApiProperty()
+  @IsString()
+  country: string;
+
+  @ApiProperty()
+  @IsString()
+  city: string;
+
+  @ApiProperty()
+  @IsString()
+  address: string;
+
+  @ApiProperty()
+  @IsString()
+  phone: string;
+
+  @ApiProperty()
+  @IsString()
+  apiKey: string;
+
+  @ApiProperty()
   @IsDateString()
   createdAt: Date;
 

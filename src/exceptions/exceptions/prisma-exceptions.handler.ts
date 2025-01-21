@@ -39,6 +39,10 @@ export class PrismaExceptionsHandler extends ExceptionHandler {
         );
       case 'P2025':
         throw new NotFoundException(`${error.meta['modelName']} not found`);
+      case 'P2003':
+        throw new ConflictException(
+          `${error.meta['modelName']} foreign key ${(error.meta['field_name'] as string).split('_')[1]} not found`,
+        );
       default:
         throw new InternalServerErrorException('Unexpected Prisma error');
     }

@@ -7,8 +7,17 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+
+import { PermissionsGuard } from '@/permissions/guards/permission.guard';
 
 import { ContactDto } from '../dto/contact.dto';
 import { CreateContactDto } from '../dto/create-contact.dto';
@@ -16,6 +25,8 @@ import { ContactService } from '../providers/contact.service';
 
 @ApiTags('Contacts')
 @Controller('contacts')
+@ApiBearerAuth('jwt')
+@UseGuards(AuthGuard('jwt'), PermissionsGuard)
 export class ContactController {
   constructor(private readonly contactService: ContactService) {}
 

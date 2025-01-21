@@ -7,7 +7,6 @@ import {
   IsDate,
   IsEnum,
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsString,
   ValidateNested,
@@ -18,17 +17,14 @@ import { CreateCampaignRuleDto } from './create-campaign-rule.dto';
 export class CreateCampaignDto {
   @ApiProperty()
   @IsString()
-  @IsNotEmpty()
   name: string;
 
   @ApiProperty()
   @IsString()
-  @IsNotEmpty()
   description: string;
 
   @ApiProperty()
   @IsString()
-  @IsNotEmpty()
   content: string;
 
   @ApiProperty({ enum: ContentType })
@@ -53,7 +49,6 @@ export class CreateCampaignDto {
 
   @ApiProperty()
   @IsString()
-  @IsNotEmpty()
   time: string;
 
   @ApiProperty({
@@ -62,7 +57,6 @@ export class CreateCampaignDto {
   @IsEnum($Enums.Weekday, { each: true })
   @IsArray()
   @ArrayMinSize(1)
-  @IsNotEmpty({ each: true })
   days: $Enums.Weekday[];
 
   @ApiProperty({
@@ -74,12 +68,10 @@ export class CreateCampaignDto {
 
   @ApiProperty()
   @IsInt()
-  @IsNotEmpty()
-  providerId: number;
+  channelId: number;
 
   @ApiProperty()
   @IsInt()
-  @IsNotEmpty()
   organizationId: number;
 
   @ApiPropertyOptional({ type: [CreateCampaignRuleDto] })

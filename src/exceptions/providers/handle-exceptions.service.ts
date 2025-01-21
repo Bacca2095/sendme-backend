@@ -40,8 +40,6 @@ export class HandleExceptionsService implements OnModuleInit {
   async handleErrors(error: unknown): Promise<never> {
     this.logger.error(error);
 
-    console.log({ instance: typeof error, error });
-
     if (error instanceof HttpException) {
       throw error;
     }

@@ -79,6 +79,9 @@ export class AsyncLocalStorageService {
   }
 
   isAdmin(): boolean {
+    if (!this.shouldValidateOrganization()) {
+      return true;
+    }
     const userInfo = this.getUserInfo();
     return userInfo?.role === 'admin';
   }

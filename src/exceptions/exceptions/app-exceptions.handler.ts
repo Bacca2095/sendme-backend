@@ -1,8 +1,10 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 
 import { ExceptionHandler } from './interfaces/exception-handler.interface';
@@ -34,6 +36,10 @@ export class AppExceptionsHandler extends ExceptionHandler {
         throw new BadRequestException('Invalid credentials');
       case AppErrorCodesEnum.ORGANIZATION_ID_NOT_FOUND:
         throw new BadRequestException('Organization not found');
+      case AppErrorCodesEnum.RESOURCE_NOT_FOUND:
+        throw new NotFoundException('Resource not found');
+      case AppErrorCodesEnum.FORBIDDEN:
+        throw new ForbiddenException('No access to this resource');
       default:
         throw new InternalServerErrorException(
           `An unexpected error occurred: ${error.code}`,

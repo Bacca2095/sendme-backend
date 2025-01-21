@@ -22,10 +22,12 @@ export class CampaignDto implements Campaign {
     enum: $Enums.Weekday,
     description: 'Days of the week when the campaign will be executed',
     example: ['MO', 'TU', 'WE'],
+    isArray: true,
   })
   @IsEnum($Enums.Weekday, { each: true })
   @IsArray()
   days: $Enums.Weekday[];
+
   @ApiProperty()
   @IsNumber()
   id: number;
@@ -71,7 +73,7 @@ export class CampaignDto implements Campaign {
 
   @ApiProperty()
   @IsNumber()
-  providerId: number;
+  channelId: number;
 
   @ApiProperty()
   @IsNumber()

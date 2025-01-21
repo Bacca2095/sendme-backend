@@ -23,6 +23,10 @@ export class CampaignRuleService {
   }
 
   async create(data: CreateCampaignRuleDto): Promise<CampaignRuleDto> {
+    const { campaignId } = data;
+    if (!campaignId) {
+      throw new Error('Campaign ID is required for this operation.');
+    }
     return this.db.campaignRule.create({ data });
   }
 

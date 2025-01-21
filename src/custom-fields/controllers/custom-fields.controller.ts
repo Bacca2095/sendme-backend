@@ -7,8 +7,12 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+
+import { PermissionsGuard } from '@/permissions/guards/permission.guard';
 
 import { CreateCustomFieldDto } from '../dto/create-custom-field.dto';
 import { CustomFieldDto } from '../dto/custom-field.dto';
@@ -16,6 +20,8 @@ import { CustomFieldsService } from '../providers/custom-fields.service';
 
 @ApiTags('Custom Fields')
 @Controller('custom-fields')
+@ApiBearerAuth('jwt')
+@UseGuards(AuthGuard('jwt'), PermissionsGuard)
 export class CustomFieldsController {
   constructor(private readonly customFieldsService: CustomFieldsService) {}
 

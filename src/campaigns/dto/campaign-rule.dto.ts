@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { $Enums, CampaignRule } from '@prisma/client';
 import { JsonValue } from '@prisma/client/runtime/library';
-import { IsDateString, IsEnum, IsNumber } from 'class-validator';
+import { Allow, IsDateString, IsEnum, IsNumber } from 'class-validator';
 
 export class CampaignRuleDto implements CampaignRule {
   @ApiProperty()
@@ -15,6 +15,7 @@ export class CampaignRuleDto implements CampaignRule {
   conditionType: $Enums.ConditionType;
 
   @ApiProperty()
+  @Allow()
   value: JsonValue;
 
   @ApiProperty()

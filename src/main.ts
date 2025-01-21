@@ -18,10 +18,10 @@ const configureLogger = (app: INestApplication): void => {
   app.useLogger(logger);
 };
 
-const configureSwagger = (app: INestApplication): void => {
+const configureSwaggerGeneral = (app: INestApplication): void => {
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Finance API')
-    .setDescription('API documentation for Finance application')
+    .setTitle('Sendme API')
+    .setDescription('API documentation for Sendme application')
     .setVersion('1.0')
     .addBearerAuth(
       {
@@ -35,7 +35,35 @@ const configureSwagger = (app: INestApplication): void => {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
+};
+
+const configureSwaggerAdmin = (app: INestApplication): void => {
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Sendme API for Admin')
+    .setDescription('API documentation for Sendme application')
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        in: 'header',
+      },
+      'jwt',
+    )
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('/admin/api', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
 };
 
 const configureGlobalPipes = (app: INestApplication): void => {
@@ -61,7 +89,8 @@ const bootstrap = async (): Promise<void> => {
 
   configureApp(app);
   configureLogger(app);
-  configureSwagger(app);
+  configureSwaggerGeneral(app);
+  configureSwaggerAdmin(app);
   configureGlobalPipes(app);
 
   await app.listen(environment.port);

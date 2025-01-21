@@ -32,13 +32,19 @@ CREATE TYPE "Weekday" AS ENUM ('MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU');
 CREATE TYPE "Frequency" AS ENUM ('DAILY', 'WEEKLY', 'MONTHLY');
 
 -- CreateEnum
-CREATE TYPE "RechargeStatus" AS ENUM ('pending', 'completed', 'failed');
+CREATE TYPE "RechargeStatus" AS ENUM ('accepted', 'rejected', 'pending', 'failed', 'reversed', 'held', 'initiated', 'expired', 'abandoned', 'cancelled');
 
 -- CreateTable
 CREATE TABLE "Organization" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "domain" TEXT,
+    "document" TEXT,
+    "documentType" TEXT,
+    "country" TEXT,
+    "city" TEXT,
+    "address" TEXT,
+    "phone" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),
@@ -170,7 +176,7 @@ CREATE TABLE "Campaign" (
     "endDate" TIMESTAMP(3),
     "time" TEXT NOT NULL,
     "rrule" TEXT,
-    "providerId" INTEGER NOT NULL,
+    "channelId" INTEGER NOT NULL,
     "organizationId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -202,6 +208,7 @@ CREATE TABLE "CampaignDispatch" (
     "totalDelivered" INTEGER NOT NULL DEFAULT 0,
     "totalFailed" INTEGER NOT NULL DEFAULT 0,
     "notes" TEXT,
+    "providerId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -261,8 +268,10 @@ CREATE TABLE "Payment" (
     "amount" DOUBLE PRECISION NOT NULL,
     "method" TEXT NOT NULL,
     "paymentProviderId" INTEGER NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'pending',
+    "status" "RechargeStatus" NOT NULL DEFAULT 'pending',
     "transactionId" TEXT NOT NULL,
+    "organizationId" INTEGER,
+    "currencyCode" TEXT NOT NULL DEFAULT 'USD',
     "notes" TEXT,
     "subscriptionId" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -293,8 +302,9 @@ CREATE TABLE "Subscription" (
 -- CreateTable
 CREATE TABLE "Recharge" (
     "id" SERIAL NOT NULL,
+    "paymentId" INTEGER NOT NULL,
     "organizationId" INTEGER NOT NULL,
-    "paymentId" INTEGER,
+    "currencyCode" TEXT NOT NULL DEFAULT 'USD',
     "amount" DOUBLE PRECISION NOT NULL,
     "messageCount" INTEGER NOT NULL,
     "remainingAmount" DOUBLE PRECISION NOT NULL,
@@ -425,7 +435,7 @@ ALTER TABLE "CustomValue" ADD CONSTRAINT "CustomValue_contactId_fkey" FOREIGN KE
 ALTER TABLE "CustomValue" ADD CONSTRAINT "CustomValue_customFieldId_fkey" FOREIGN KEY ("customFieldId") REFERENCES "CustomField"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Campaign" ADD CONSTRAINT "Campaign_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "Provider"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Campaign" ADD CONSTRAINT "Campaign_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "Channel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Campaign" ADD CONSTRAINT "Campaign_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -435,6 +445,9 @@ ALTER TABLE "CampaignRule" ADD CONSTRAINT "CampaignRule_campaignId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "CampaignRule" ADD CONSTRAINT "CampaignRule_customFieldId_fkey" FOREIGN KEY ("customFieldId") REFERENCES "CustomField"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CampaignDispatch" ADD CONSTRAINT "CampaignDispatch_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "Provider"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CampaignDispatch" ADD CONSTRAINT "CampaignDispatch_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "Campaign"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -449,6 +462,9 @@ ALTER TABLE "ChannelProvider" ADD CONSTRAINT "ChannelProvider_providerId_fkey" F
 ALTER TABLE "Payment" ADD CONSTRAINT "Payment_paymentProviderId_fkey" FOREIGN KEY ("paymentProviderId") REFERENCES "PaymentProvider"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Payment" ADD CONSTRAINT "Payment_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -458,10 +474,10 @@ ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_organizationId_fkey" FOR
 ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_planId_fkey" FOREIGN KEY ("planId") REFERENCES "Plan"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Recharge" ADD CONSTRAINT "Recharge_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Recharge" ADD CONSTRAINT "Recharge_paymentId_fkey" FOREIGN KEY ("paymentId") REFERENCES "Payment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Recharge" ADD CONSTRAINT "Recharge_paymentId_fkey" FOREIGN KEY ("paymentId") REFERENCES "Payment"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Recharge" ADD CONSTRAINT "Recharge_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "SentMessage" ADD CONSTRAINT "SentMessage_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "Provider"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { hash } from 'argon2';
 
+import { HandleExceptions } from '@/exceptions/decorators/handle-exceptions.decorator';
 import { AppErrorCodesEnum } from '@/exceptions/enums/app-error-codes.enum';
 import { AppError } from '@/exceptions/errors/app.error';
 import { AsyncLocalStorageService } from '@/shared/providers/async-local-storage.service';
@@ -17,6 +18,7 @@ export class UserService {
     private readonly als: AsyncLocalStorageService,
   ) {}
 
+  @HandleExceptions()
   async get(): Promise<UserDto[]> {
     const organizationId = this.als.getValidatedOrganizationId();
     const whereClause = organizationId ? { organizationId } : {};
@@ -33,6 +35,7 @@ export class UserService {
     }));
   }
 
+  @HandleExceptions()
   async getById(id: number): Promise<UserDto> {
     const organizationId = this.als.getValidatedOrganizationId();
     const whereClause = organizationId ? { id, organizationId } : { id };
@@ -46,6 +49,7 @@ export class UserService {
     return user;
   }
 
+  @HandleExceptions()
   async getByEmail(email: string): Promise<UserWithPasswordDto> {
     const user = await this.db.user.findUniqueOrThrow({
       where: { email },
@@ -66,6 +70,7 @@ export class UserService {
     };
   }
 
+  @HandleExceptions()
   async create(data: CreateUserDto): Promise<UserDto> {
     const organizationId = this.als.getValidatedOrganizationId(
       data.organizationId,
@@ -96,14 +101,9 @@ export class UserService {
     return userWithRole;
   }
 
+  @HandleExceptions()
   async update(id: number, data: UpdateUserDto): Promise<UserDto> {
-    const organizationId = this.als.getValidatedOrganizationId(
-      data.organizationId,
-    );
-
-    if (!organizationId) {
-      throw new AppError(AppErrorCodesEnum.ORGANIZATION_ID_NOT_FOUND);
-    }
+    const organizationId = this.als.getValidatedOrganizationId();
 
     const { password, roleId, ...rest } = data;
     const hashedPassword = password ? await hash(password) : undefined;
@@ -122,6 +122,7 @@ export class UserService {
     return userWithRole;
   }
 
+  @HandleExceptions()
   async remove(id: number): Promise<UserDto> {
     const organizationId = this.als.getValidatedOrganizationId();
     const whereClause = organizationId ? { id, organizationId } : { id };

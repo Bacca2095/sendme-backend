@@ -1,11 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Subscription } from '@prisma/client';
-import { IsDateString, IsNumber } from 'class-validator';
+import { $Enums, Subscription } from '@prisma/client';
+import { IsDateString, IsEnum, IsNumber } from 'class-validator';
 
 export class SubscriptionDto implements Subscription {
   @ApiProperty()
   @IsNumber()
   id: number;
+
+  @ApiProperty({ enum: $Enums.SubscriptionStatus })
+  @IsEnum($Enums.SubscriptionStatus)
+  status: $Enums.SubscriptionStatus;
 
   @ApiProperty()
   @IsNumber()

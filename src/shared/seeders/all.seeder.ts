@@ -2,6 +2,23 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const seedChannels = async () => {
+  const channels = [{ name: 'sms' }, { name: 'email' }, { name: 'whatsapp' }];
+
+  console.log('Seeding channels...');
+  const promises = channels.map(async (channel) => {
+    const exists = await prisma.channel.findUnique({
+      where: { name: channel.name },
+    });
+    if (!exists) {
+      await prisma.channel.create({ data: channel });
+    }
+  });
+
+  await Promise.all(promises);
+  console.log('Channels seeded successfully.');
+};
+
 const seedPermissions = async () => {
   const actions = ['create', 'read', 'update', 'delete'];
   const resources = [
@@ -214,6 +231,7 @@ const seedPlans = async () => {
 
 const main = async () => {
   console.log('Starting seeder...');
+  await seedChannels();
   await seedPermissions();
   await seedRoles();
   await assignRolePermissions();
