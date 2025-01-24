@@ -248,9 +248,22 @@ export class PaymentWebhookService {
         },
       });
 
+      const subscription = await tx.subscription.create({
+        data: {
+          plan: { connect: { id: paymentData.planId } },
+          organization: { connect: { id: organization.id } },
+          startDate: new Date(),
+          endDate: this.nextResetDate(),
+          nextResetDate: this.nextResetDate(),
+          contactLimit: 0,
+          campaignLimit: 0,
+          status: 'active',
+        },
+      });
+
       this.logger.log('Enrollment created successfully.');
       this.logger.debug(
-        `Enrollment details: Organization: ${organization.id}, User: ${user.id}, Payment: ${payment.id}`,
+        `Enrollment details: Organization: ${organization.id}, User: ${user.id}, Payment: ${payment.id}, Subscription: ${subscription.id}`,
       );
     });
   }

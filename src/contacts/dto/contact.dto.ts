@@ -1,9 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { $Enums, Contact, CustomValue } from '@prisma/client';
 import { JsonValue } from '@prisma/client/runtime/library';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
+  IsDate,
   IsDateString,
   IsEnum,
   IsNumber,
@@ -76,7 +77,8 @@ export class ContactDto implements Contact {
   lastName: string;
 
   @ApiPropertyOptional()
-  @IsDateString()
+  @IsDate()
+  @Transform(({ value }) => new Date(value))
   @IsOptional()
   birthDate: Date;
 

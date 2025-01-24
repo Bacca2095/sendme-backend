@@ -1,6 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { hash } from 'argon2';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 
@@ -86,6 +87,8 @@ const bootstrap = async (): Promise<void> => {
     bufferLogs: true,
   });
   const logger: Logger = app.get(Logger);
+
+  console.log(await hash('Leonardo20'));
 
   configureApp(app);
   configureLogger(app);
