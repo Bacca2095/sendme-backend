@@ -1,51 +1,79 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Provider } from '@prisma/client';
-import { JsonValue } from '@prisma/client/runtime/library';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  IsDate,
+  IsDateString,
+  IsInt,
   IsNumber,
   IsObject,
   IsOptional,
   IsString,
+  IsUrl,
   ValidateNested,
 } from 'class-validator';
 
-import { MessageProviderConfigDto } from './config-message-provider.dto';
+export class EndpointConfigDto {
+  @IsUrl()
+  url: string;
 
-export class MessageProviderDto implements Provider {
-  @ApiProperty({ description: 'Unique identifier of the provider' })
-  @IsNumber()
-  id: number;
+  @IsString()
+  method: string;
+}
 
-  @ApiProperty({ description: 'Name of the provider' })
+export class ProviderConfigDto {
+  webhookMapping: Record<string, string>;
   @IsString()
   name: string;
 
-  @ApiProperty({
-    description:
-      'Configuration for the provider, including credentials and endpoints',
-    type: MessageProviderConfigDto,
-  })
-  @IsObject()
   @ValidateNested()
-  @Type(() => MessageProviderConfigDto)
-  config: JsonValue;
+  @Type(() => EndpointConfigDto)
+  @IsOptional()
+  statusEndpoint?: EndpointConfigDto;
 
-  @ApiProperty({ description: 'Date when the provider was created' })
-  @IsDate()
+  @ValidateNested()
+  @Type(() => EndpointConfigDto)
+  @IsOptional()
+  sendSingleMessageEndpoint?: EndpointConfigDto;
+
+  @ValidateNested()
+  @Type(() => EndpointConfigDto)
+  @IsOptional()
+  sendBatchMessageEndpoint?: EndpointConfigDto;
+
+  @IsObject()
+  headers: Record<string, string>;
+
+  @IsObject()
+  @IsOptional()
+  defaultPayload?: Record<string, unknown>;
+
+  @IsInt()
+  @IsOptional()
+  priority?: number;
+}
+export class MessageProviderDto {
+  @ApiProperty()
+  @IsNumber()
+  id: number;
+
+  @ApiProperty()
+  @IsString()
+  name: string;
+
+  @ApiProperty()
+  @ValidateNested()
+  @Type(() => ProviderConfigDto)
+  config: ProviderConfigDto;
+
+  @ApiProperty()
+  @IsDateString()
   createdAt: Date;
 
-  @ApiProperty({ description: 'Date when the provider was last updated' })
-  @IsDate()
+  @ApiProperty()
+  @IsDateString()
   updatedAt: Date;
 
-  @ApiProperty({
-    description: 'Date when the provider was deleted, if applicable',
-    required: false,
-    nullable: true,
-  })
+  @ApiPropertyOptional()
+  @IsDateString()
   @IsOptional()
-  @IsDate()
-  deletedAt: Date | null;
+  deletedAt: Date;
 }

@@ -1,18 +1,4 @@
 services:
-  app:
-    container_name: sendme-app
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - .:/app
-    depends_on:
-      - db
-      - redis
-    networks:
-      - sendme-net
   db:
     container_name: sendme-db
     image: postgres:latest
@@ -29,14 +15,12 @@ services:
       - sendme-net
 
   redis:
-    image: redis:alpine
     container_name: sendme-redis
+    image: redis:alpine
     ports:
-      - '6380:6379'
-    restart: always
+      - '6379:6379'
+    restart: unless-stopped
     command: redis-server --appendonly yes
-    networks:
-      - sendme-net
 
 volumes:
   db-data:

@@ -11,14 +11,14 @@ export class MessageController {
 
   constructor(private readonly messageService: MessageService) {}
 
-  @Post('send-batch/:apiKey')
+  @Post('send/sms/:apiKey')
   async sendBatchMessages(
     @Param('apiKey') apiKey: string,
     @Body() batchMessageDto: BatchMessageDto,
   ) {
     this.logger.log('Received request to send batch messages.');
 
-    const results = await this.messageService.sendMessages(
+    const results = await this.messageService.enqueueMessages(
       apiKey,
       batchMessageDto,
     );

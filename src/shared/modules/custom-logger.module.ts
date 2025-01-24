@@ -25,7 +25,7 @@ import { CORRELATION_ID_HEADER } from '../middleware/correlation-id.middleware';
             correlationId: req[CORRELATION_ID_HEADER],
           }),
           autoLogging: true,
-          level: 'info',
+          level: 'debug',
         },
       }),
     }),

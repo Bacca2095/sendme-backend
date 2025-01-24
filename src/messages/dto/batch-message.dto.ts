@@ -1,15 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class BatchMessageDto {
-  @ApiProperty({
-    description: 'Canal por el cual se enviarán los mensajes',
-    example: 'sms',
-  })
-  @IsNotEmpty()
-  @IsString()
-  channel: string;
-
   @ApiProperty({
     description:
       'Lista de destinatarios. Puede contener números de teléfono o correos electrónicos según el canal',
@@ -21,7 +13,7 @@ export class BatchMessageDto {
   @IsNotEmpty()
   @IsArray()
   @IsString({ each: true })
-  recipients: string[];
+  contacts: string[];
 
   @ApiProperty({
     description: 'Contenido del mensaje a enviar',
@@ -29,10 +21,11 @@ export class BatchMessageDto {
   })
   @IsNotEmpty()
   @IsString()
-  content: string;
+  message: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsNotEmpty()
   @IsString()
-  country: string;
+  @IsOptional()
+  country?: string;
 }

@@ -1,6 +1,6 @@
 import { ExpressAdapter } from '@bull-board/express';
 import { BullBoardModule } from '@bull-board/nestjs';
-import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bullmq';
 import { Global, Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -21,7 +21,7 @@ import { PrismaService } from './providers/prisma.service';
     AuthModule,
     ScheduleModule.forRoot(),
     BullModule.forRoot({
-      redis: {
+      connection: {
         host: 'localhost',
         port: 6379,
       },
