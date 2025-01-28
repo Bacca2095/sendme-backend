@@ -2,8 +2,13 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Queue } from 'bullmq';
+import dayjs, { extend } from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import { RRule, rrulestr } from 'rrule';
 
 import { PrismaService } from '@/shared/providers/prisma.service';
+
+extend(utc);
 
 interface CampaignRule {
   conditionType: string;
@@ -35,11 +40,18 @@ export class CampaignCronService {
   async processScheduledCampaigns(): Promise<void> {
     this.logger.log('Checking for scheduled campaigns to process...');
 
+    // Obtener la hora actual y 1 minuto atrás en UTC
+    const nowUTC = dayjs().utc();
+    const oneMinuteAgoUTC = dayjs().utc().subtract(1, 'minute');
+
+    this.logger.debug(`Current UTC time: ${nowUTC.toISOString()}`);
+    this.logger.debug(
+      `1 minute ago UTC time: ${oneMinuteAgoUTC.toISOString()}`,
+    );
+
     const campaigns = await this.db.campaign.findMany({
       where: {
         status: 'active',
-        startDate: { lte: new Date() },
-        endDate: { gte: new Date() },
       },
       include: {
         campaignRules: true,
@@ -48,13 +60,42 @@ export class CampaignCronService {
     });
 
     if (campaigns.length === 0) {
-      this.logger.log('No scheduled campaigns to process.');
+      this.logger.log('No active campaigns to process.');
       return;
     }
 
     for (const campaign of campaigns) {
       try {
         this.logger.log(`Processing campaign ID: ${campaign.id}`);
+
+        let rrule: RRule | null = null;
+        try {
+          rrule = rrulestr(campaign.rrule, { forceset: true });
+        } catch (error) {
+          this.logger.error(
+            `Invalid RRule for campaign ID ${campaign.id}: ${error['message']}`,
+          );
+          continue;
+        }
+
+        const nextOccurrences = rrule.between(
+          oneMinuteAgoUTC.toDate(),
+          nowUTC.toDate(),
+          true,
+        );
+
+        this.logger.debug(
+          `Next occurrences for campaign ID ${campaign.id}: ${nextOccurrences.map(
+            (occurrence) => dayjs(occurrence).toISOString(),
+          )}`,
+        );
+
+        if (nextOccurrences.length === 0) {
+          this.logger.log(
+            `Campaign ID ${campaign.id} is not scheduled to run at this time.`,
+          );
+          continue;
+        }
 
         const contacts = await this.db.contact.findMany({
           where: { organizationId: campaign.organizationId },
@@ -85,13 +126,30 @@ export class CampaignCronService {
           `Found ${eligibleContacts.length} eligible contacts for campaign ID ${campaign.id}.`,
         );
 
-        const messages = eligibleContacts.map((contact) => ({
-          content: campaign.content,
-          recipient: contact.phone,
-          country: contact.countryCode,
-          organizationId: campaign.organizationId,
-          campaignId: campaign.id,
-        }));
+        const messages = await Promise.all(
+          eligibleContacts.map(async (contact) => {
+            const message = await this.db.sentMessage.create({
+              data: {
+                content: campaign.content,
+                contentType: campaign.contentType,
+                status: 'queued',
+                recipientDetails: contact.phone,
+                countryCode: contact.countryCode,
+                organizationId: campaign.organizationId,
+                campaignId: campaign.id,
+              },
+            });
+
+            return {
+              id: message.id,
+              content: campaign.content,
+              recipient: contact.phone,
+              country: contact.countryCode,
+              organizationId: campaign.organizationId,
+              campaignId: campaign.id,
+            };
+          }),
+        );
 
         await this.messageQueue.add('send-messages', {
           sentMessages: messages,

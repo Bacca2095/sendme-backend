@@ -103,7 +103,7 @@ export class MessageQueueProcessor extends WorkerHost {
           }
 
           await prisma.sentMessage.update({
-            where: { id: message.id },
+            where: { id: +message.id },
             data: { rechargeId: recarga.id },
           });
         }
