@@ -17,10 +17,6 @@ export class PlanDto implements Plan {
 
   @ApiProperty()
   @IsNumber()
-  messageLimit: number;
-
-  @ApiProperty()
-  @IsNumber()
   contactLimit: number;
 
   @ApiProperty()

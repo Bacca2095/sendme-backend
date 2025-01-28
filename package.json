@@ -40,6 +40,7 @@
     "@nestjs/schedule": "^4.1.2",
     "@nestjs/swagger": "^8.1.0",
     "@nestjs/websockets": "^10.4.15",
+    "@opensearch-project/opensearch": "^3.2.0",
     "@prisma/client": "^6.2.1",
     "argon2": "^0.41.1",
     "axios": "^1.7.9",

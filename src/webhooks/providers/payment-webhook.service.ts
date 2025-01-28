@@ -283,7 +283,6 @@ export class PaymentWebhookService {
       });
 
       const limits = {
-        messageLimit: plan.messageLimit || 0,
         contactLimit: plan.contactLimit || 0,
         campaignLimit: plan.campaignLimit || 0,
       };

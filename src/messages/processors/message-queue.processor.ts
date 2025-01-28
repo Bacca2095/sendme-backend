@@ -63,7 +63,6 @@ export class MessageQueueProcessor extends WorkerHost {
 
       const messageCost = subscription.plan.pricePerMessage;
 
-      // Obtener recargas
       const recargas = await prisma.recharge.findMany({
         where: {
           organizationId,
@@ -76,7 +75,6 @@ export class MessageQueueProcessor extends WorkerHost {
       let remainingCost = messageCost * sentMessages.length;
       let rechargeIndex = 0;
 
-      // Descontar costos
       for (const message of sentMessages) {
         let costForMessage = messageCost;
 
@@ -110,9 +108,7 @@ export class MessageQueueProcessor extends WorkerHost {
 
         if (costForMessage > 0) {
           if (
-            subscription.messageUsage +
-              Math.ceil(costForMessage / messageCost) >
-            subscription.plan.messageLimit
+            subscription.messageUsage + Math.ceil(costForMessage / messageCost)
           ) {
             this.logger.error(
               'Not enough subscription balance to send the message.',
